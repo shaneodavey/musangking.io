@@ -4,33 +4,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { X, Camera, Loader2 } from "lucide-react";
 import { useLanguage } from '../LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
 
-const PEST_TYPES = [
-  'Stem Borer', 'Fruit Borer', 'Mites', 'Scale Insects', 
-  'Mealybugs', 'Aphids', 'Leaf Roller', 'Phytophthora', 
-  'Anthracnose', 'Root Rot', 'Canker', 'Algal Spot', 'Other'
+const GROWTH_STAGES = [
+  'Flush', 'Vegetative', 'Flower Bud', 'Flowering', 
+  'Fruit Set', 'Maturing', 'Harvest', 'Rest'
 ];
 
-const SEVERITY_LEVELS = ['Low', 'Medium', 'High'];
-
-export default function PestForm({ tree, farm, onClose, onSave }) {
+export default function GrowthForm({ tree, onClose, onSave }) {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     tree_id: tree?.id || '',
-    farm_id: farm?.id || '',
     record_date: format(new Date(), 'yyyy-MM-dd'),
-    pest_type: '',
-    pest_other: '',
-    severity: '',
-    treatment_product: '',
-    treatment_dose: '',
-    treatment_method: '',
+    height_m: '',
+    trunk_diameter_cm: '',
+    canopy_diameter_m: '',
+    growth_stage: '',
+    vigor_score: 3,
     photos: [],
     notes: ''
   });
@@ -55,16 +51,35 @@ export default function PestForm({ tree, farm, onClose, onSave }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await base44.entities.PestRecord.create(form);
+    
+    const data = {
+      ...form,
+      height_m: form.height_m ? parseFloat(form.height_m) : null,
+      trunk_diameter_cm: form.trunk_diameter_cm ? parseFloat(form.trunk_diameter_cm) : null,
+      canopy_diameter_m: form.canopy_diameter_m ? parseFloat(form.canopy_diameter_m) : null,
+    };
+    
+    await base44.entities.GrowthRecord.create(data);
     setLoading(false);
     onSave();
+  };
+
+  const stageTranslations = {
+    'Flush': t('flush'),
+    'Vegetative': t('vegetative'),
+    'Flower Bud': t('flowerBud'),
+    'Flowering': t('flowering'),
+    'Fruit Set': t('fruitSet'),
+    'Maturing': t('maturing'),
+    'Harvest': t('harvest'),
+    'Rest': t('rest'),
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
       <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl">
         <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">{t('pestRecord')}</h2>
+          <h2 className="text-lg font-semibold text-slate-900">{t('growthRecord')}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
@@ -82,84 +97,78 @@ export default function PestForm({ tree, farm, onClose, onSave }) {
             />
           </div>
 
-          <div>
-            <Label>{t('pestType')}</Label>
-            <Select
-              value={form.pest_type}
-              onValueChange={(v) => setForm({ ...form, pest_type: v })}
-            >
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder={t('select')} />
-              </SelectTrigger>
-              <SelectContent>
-                {PEST_TYPES.map(type => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {form.pest_type === 'Other' && (
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Specify</Label>
+              <Label>{t('height')}</Label>
               <Input
-                value={form.pest_other}
-                onChange={(e) => setForm({ ...form, pest_other: e.target.value })}
-                placeholder="Enter pest/disease name"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0.0"
+                value={form.height_m}
+                onChange={(e) => setForm({ ...form, height_m: e.target.value })}
                 className="mt-1"
               />
             </div>
-          )}
+            <div>
+              <Label>{t('trunkDiameter')}</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0.0"
+                value={form.trunk_diameter_cm}
+                onChange={(e) => setForm({ ...form, trunk_diameter_cm: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+          </div>
 
           <div>
-            <Label>{t('severity')}</Label>
+            <Label>{t('canopyDiameter')}</Label>
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="0.0"
+              value={form.canopy_diameter_m}
+              onChange={(e) => setForm({ ...form, canopy_diameter_m: e.target.value })}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label>{t('stage')}</Label>
             <Select
-              value={form.severity}
-              onValueChange={(v) => setForm({ ...form, severity: v })}
+              value={form.growth_stage}
+              onValueChange={(v) => setForm({ ...form, growth_stage: v })}
             >
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder={t('select')} />
               </SelectTrigger>
               <SelectContent>
-                {SEVERITY_LEVELS.map(level => (
-                  <SelectItem key={level} value={level}>{level}</SelectItem>
+                {GROWTH_STAGES.map(stage => (
+                  <SelectItem key={stage} value={stage}>
+                    {stageTranslations[stage]}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="pt-2 border-t">
-            <p className="text-sm font-medium text-slate-700 mb-3">{t('treatment')}</p>
-            <div className="space-y-3">
-              <div>
-                <Label>{t('product')}</Label>
-                <Input
-                  value={form.treatment_product}
-                  onChange={(e) => setForm({ ...form, treatment_product: e.target.value })}
-                  placeholder="Product name"
-                  className="mt-1"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>{t('dose')}</Label>
-                  <Input
-                    value={form.treatment_dose}
-                    onChange={(e) => setForm({ ...form, treatment_dose: e.target.value })}
-                    placeholder="e.g., 10ml/L"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label>{t('method')}</Label>
-                  <Input
-                    value={form.treatment_method}
-                    onChange={(e) => setForm({ ...form, treatment_method: e.target.value })}
-                    placeholder="e.g., Spray"
-                    className="mt-1"
-                  />
-                </div>
-              </div>
+          <div>
+            <Label>{t('vigor')} ({form.vigor_score})</Label>
+            <Slider
+              value={[form.vigor_score]}
+              onValueChange={([v]) => setForm({ ...form, vigor_score: v })}
+              min={1}
+              max={5}
+              step={1}
+              className="mt-2"
+            />
+            <div className="flex justify-between text-xs text-slate-500 mt-1">
+              <span>1 (Poor)</span>
+              <span>5 (Excellent)</span>
             </div>
           </div>
 
