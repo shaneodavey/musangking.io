@@ -1,10 +1,11 @@
+import base44 from "@base44/vite-plugin"
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
+
+// https://vite.dev/config/
 export default defineConfig({
+  logLevel: 'error', // Suppress warnings, only show errors
   plugins: [
-    base44({
-      visualEditAgent: false,
-      navigationNotifier: false,
-      hmrNotifier: false
-    }),
-    react(),
+    base44({ disabled: true }),
   ]
-})
+});
